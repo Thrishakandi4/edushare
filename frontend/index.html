@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Manager</title>
+</head>
+<body>
+    <h2>Add Student</h2>
+    <form id="studentForm" onsubmit="addOrUpdateStudent(event)">
+        <input type="text" id="studentName" placeholder="Enter name" required />
+        <input type="hidden" id="studentId" />
+        <button type="submit">Save</button>
+    </form>
+
+
+
+
+    <h2>Student List</h2>
+    <button onclick="loadStudents()">Load Students</button>
+    <ul id="studentList"></ul>
+
+    <script>
+        async function loadStudents() {
+            const list = document.getElementById("studentList");
+            list.innerHTML = "";
+            const res = await fetch("http://localhost:3000/students");
+            const students = await res.json();
+
+            students.forEach((student) => {
+                const li = document.createElement("li");
+                li.innerHTML = `
+                    ${student.name}
+                    <button onclick="editStudent('${student._id}', '${student.name}')">Edit</button>
+                    <button onclick="deleteStudent('${student._id}')">Delete</button>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function editStudent(id, name) {
+            document.getElementById("studentName").value = name;
+            document.getElementById("studentId").value = id;
+        }
+        //adding student....
+
+        async function addOrUpdateStudent(e) {
+            e.preventDefault();// it stops the page from refreshing when the user clicks "Submit or save".
+            const name = document.getElementById("studentName").value;
+            const id = document.getElementById("studentId").value;
+
+            const student = { name };
+
+            if (id) {
+                // Update.......
+                const res = await fetch(`http://localhost:3000/students/${id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(student)
+                });
+                const result = await res.json(); //converts json to javascript
+                alert(result.message);
+            } else {
+                // Create.............
+                const res = await fetch("http://localhost:3000/students", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(student)
+                });
+                const result = await res.json();
+                alert(result.message);
+            }
+
+            document.getElementById("studentForm").reset();
+            loadStudents();
+        }
+
+
+        //delete.............
+
+        async function deleteStudent(id) {
+            const res = await fetch(`http://localhost:3000/students/${id}`, {
+                method: "DELETE"
+            });
+            const result = await res.json();
+            alert(result.message);
+            loadStudents();
+        }
+    </script>
+</body>
+</html>
