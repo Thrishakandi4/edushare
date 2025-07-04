@@ -4,6 +4,7 @@
     <title>Student Manager</title>
 </head>
 <body>
+    <!-- Adding Student -->
     <h2>Add Student</h2>
     <form id="studentForm" onsubmit="addOrUpdateStudent(event)">
         <input type="text" id="studentName" placeholder="Enter name" required />
@@ -11,55 +12,68 @@
         <button type="submit">Save</button>
     </form>
 
-
-
-
+    <!-- Getting Student list -->
     <h2>Student List</h2>
-    <button onclick="loadStudents()">Load Students</button>
-    <ul id="studentList"></ul>
+ 
+    
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="studentTableBody">
+        </tbody>
+    </table>
 
     <script>
+        let editMode = false;
+        let currentEditId = "";
+
         async function loadStudents() {
-            const list = document.getElementById("studentList");
-            list.innerHTML = "";
+            const tableBody = document.getElementById("studentTableBody");
+            tableBody.innerHTML = "";
             const res = await fetch("http://localhost:3000/students");
             const students = await res.json();
 
             students.forEach((student) => {
-                const li = document.createElement("li");
-                li.innerHTML = `
-                    ${student.name}
-                    <button onclick="editStudent('${student._id}', '${student.name}')">Edit</button>
-                    <button onclick="deleteStudent('${student._id}')">Delete</button>
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${student.name}</td>
+                    <td>
+                        <button onclick="prepareEdit('${student._id}', '${student.name}')">Edit</button>
+                        <button onclick="deleteStudent('${student._id}')">Delete</button>
+                    </td>
                 `;
-                list.appendChild(li);
+                tableBody.appendChild(row);
             });
         }
 
-        function editStudent(id, name) {
+        function prepareEdit(id, name) {
             document.getElementById("studentName").value = name;
-            document.getElementById("studentId").value = id;
+            currentEditId = id;
+            editMode = true;
         }
-        //adding student....
 
         async function addOrUpdateStudent(e) {
-            e.preventDefault();// it stops the page from refreshing when the user clicks "Submit or save".
+            e.preventDefault();
             const name = document.getElementById("studentName").value;
-            const id = document.getElementById("studentId").value;
-
             const student = { name };
 
-            if (id) {
-                // Update.......
-                const res = await fetch(`http://localhost:3000/students/${id}`, {
+            if (editMode) {
+                // Update
+                const res = await fetch(`http://localhost:3000/students/${currentEditId}`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(student)
                 });
-                const result = await res.json(); //converts json to javascript
+                const result = await res.json();
                 alert(result.message);
+                editMode = false;
+                currentEditId = "";
             } else {
-                // Create.............
+                // Add
                 const res = await fetch("http://localhost:3000/students", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -72,9 +86,6 @@
             document.getElementById("studentForm").reset();
             loadStudents();
         }
-
-
-        //delete.............
 
         async function deleteStudent(id) {
             const res = await fetch(`http://localhost:3000/students/${id}`, {
